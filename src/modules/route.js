@@ -1,0 +1,3 @@
+export const APPLICATION = "APPLICATION";
+export const SCREEN_VIEW = "SCREEN_VIEW";
+export const SECTION_SCREEN_VIEW = "SECTION_SCREEN_VIEW";
