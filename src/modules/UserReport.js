@@ -9,11 +9,12 @@ export default class UserReport {
             await AsyncStorage.setItem('sakId', sakId);
             await AsyncStorage.setItem('mediaId', mediaId);
         } catch (e) {
-            console.log(e);
+            console.warn(e);
         }
     };
 
     gettingData = async () => {
+        try {
         const sakId = await AsyncStorage.getItem('sakId');
         const mediaId = await AsyncStorage.getItem('mediaId');
         const {advertisingId} = await RNAdvertisingId.getAdvertisingId();
@@ -24,6 +25,9 @@ export default class UserReport {
         const url = `https://sak.userreport.com/${sakId}/media/${mediaId}/${platform}.json`;
         const data = await fetch(url);
         return { advertisingId, random, bundleId, buildNumber, data};
+        } catch (e) {
+            console.warn(e);
+        }
     };
 
     trackScreenView = async () => {
@@ -32,7 +36,7 @@ export default class UserReport {
         const idfv = Platform.OS === 'ios' ? `&idfv=${DeviceInfo.getUniqueId()}` : '';
         const track = `?r=${random}&t=${kitTcode}&d=${advertisingId}&med=${bundleId}${buildNumber}${idfv}`;
         fetch(`https://visitanalytics.userreport.com/hit.gif${track}`)
-            .then(res => console.log(res));
+            .then(res => console.log(res)).catch(res => console.warn(res));
     };
 
     trackSectionScreenView = async (sectionId) => {
@@ -42,6 +46,6 @@ export default class UserReport {
         const idfv = Platform.OS === 'ios' ? `&idfv=${await DeviceUUID.getUUID()}` : '';
         const track = `?r=${random}&t=${tCode}&d=${advertisingId}&med=${bundleId}${buildNumber}${idfv}`;
         fetch(`https://visitanalytics.userreport.com/hit.gif${track}`)
-            .then(res => console.log(res));
+            .then(res => console.log(res)).catch(res => console.warn(res));
     };
 }
