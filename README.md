@@ -10,12 +10,6 @@
 npm install --save react-native-device-info
 ```
 
-* Использование внутреннего хранилища устройства:
-
-```bash
-npm install @react-native-community/async-storage
-```
-
 * Получение AAID/GAID and IDFA:
 
 ```bash
@@ -79,22 +73,28 @@ project(':react-native-advertising-id').projectDir = new File(rootProject.projec
 
 Использование методов
 
-* Поддключите файл `UserReport.js`:
-
+* Подключите файл `UserReport.js`:
+   
 ```bash
 import UserReport from '[ВАШ ПУТЬ К ФАЙЛУ]/UserReport'
+```
+  
+* Настройка конфигурации:
+
+```bash
+UserReport().getInstance().configure([ВАШ sakId], [ВАШ mediaId]).done();
 ```
 
 * Метод `trackScreenView` не имеет аргументов:
 
 ```bash
-new UserReport().trackScreenView().done()
+UserReport.getInstance().trackScreenView().done()
 ```
 
 * Метод `trackSectionScreenView` имеет аргумент `sectionId`:
 
 ```bash
-new UserReport().trackSectionScreenView("[ВАШ sectionId]").done()
+UserReport.getInstance().trackSectionScreenView("[ВАШ sectionId]").done()
 ```
 
 ## Запуск проекта
