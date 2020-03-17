@@ -7,7 +7,7 @@ import {APPLICATION} from '../modules/route';
 
 export default class SectionScreenView extends Component {
     componentDidMount() {
-        new UserReport().trackSectionScreenView("b556da9f-9443-44ab-aa48-63d579318b69").done()
+        UserReport.getInstance().trackSectionScreenView("b556da9f-9443-44ab-aa48-63d579318b69")
     }
 
     render() {

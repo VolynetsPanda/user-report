@@ -19,7 +19,7 @@ const Screen = createStackNavigator(
 )
 export default class App extends Component{
     componentDidMount() {
-        new UserReport().configure("audienceproject","3402b774-b7a8-448c-997a-ef6cd59efc41").done();
+        UserReport.getInstance().configure("audienceproject","3402b774-b7a8-448c-997a-ef6cd59efc41");
     }
     render() {
         return <Screen/>
