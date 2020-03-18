@@ -1,6 +1,6 @@
 {
   "name": "@apr/react-native-userreport-sdk",
-  "version": "0.0.2-prerelease",
+  "version": "1.0.0",
   "description": "Running UserReport in React Native applications https://www.userreport.com/",
   "main": "UserReport.js",
   "author": "AudienceProject",
