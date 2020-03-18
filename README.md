@@ -6,18 +6,6 @@
 npm install --save @apr/react-native-userreport-sdk
 ```
 
-<!-- * `react-native-device-info` is used to get device information:
-
-```bash
-npm install --save react-native-device-info
-```
-
-* `react-native-advertising-id` is used to retrieve AAID and IDFA
-
-```bash
-npm install --save react-native-advertising-id
-``` -->
-
 ## Setup of [react-native-advertising-id](https://www.npmjs.com/package/react-native-advertising-id)
 
 Following instructions are from package [react-native-advertising-id](https://www.npmjs.com/package/react-native-advertising-id), copied for your convinence. 
@@ -34,7 +22,7 @@ Following instructions are from package [react-native-advertising-id](https://ww
 
 ### Android
 
-1. Open up `android/app/src/main/java/[...]/MainActivity.java`
+1. Open up `android/app/src/main/java/[...]/MainApplication.java`
   - Add `import info.applike.advertisingid.RNAdvertisingIdPackage;` to the imports at the top of the file
   - Add `new RNAdvertisingIdPackage()` to the list returned by the `getPackages()` method
 2. Append the following lines to `android/settings.gradle`:
@@ -44,7 +32,7 @@ Following instructions are from package [react-native-advertising-id](https://ww
     ```
 3. Insert the following lines inside the dependencies block in `android/app/build.gradle`:
     ```gradle
-      compile project(':react-native-advertising-id')
+      implementation project(':react-native-advertising-id')
     ```
 4. Update your `mainfest.xml` and declare that your app is an Ad Manager app, as instructed on [Google's Ad Manager guide](https://developers.google.com/ad-manager/mobile-ads-sdk/android/quick-start#update_your_androidmanifestxml):
 ```xml

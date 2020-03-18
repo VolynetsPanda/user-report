@@ -1,98 +1,129 @@
+import { Platform } from 'react-native';
 import RNAdvertisingId from 'react-native-advertising-id';
-import DeviceInfo from 'react-native-device-info';
-import {Platform} from 'react-native';
+import { getBundleId, getBuildNumber, getUniqueId } from 'react-native-device-info';
 
-const checkData= (data, name, logError) =>
-    (data === undefined || data === null)
-    ? logError(`${name} not received`)
-    : data;
+let debug = false;
 
-const getAnanyticsUrl = async (code, logError) => {
-        let advertisingId = '00000000-0000-0000-0000-000000000000';
-        try{
-            const rnaResponse = await RNAdvertisingId.getAdvertisingId();
-            if(rnaResponse && rnaResponse.advertisingId){
-                advertisingId = rnaResponse.advertisingId;
-            }
+const warn = (...args) => {
+  if (debug) {
+    console.warn(...args);
+  }
+}
 
-        }catch(e){
-            logError("Can not get advetising Id (AAID or IDFA)");
-        }
-        const random = Math.floor(Math.random() * 1e10);
-        const bundleId = checkData(DeviceInfo.getBundleId(), 'BundleId', logError);
-        const buildNumber = checkData(DeviceInfo.getBuildNumber(), 'BuildNumber', logError);
-        const idfv = Platform.OS === 'ios' ? `&idfv=${DeviceInfo.getUniqueId()}` : '';
-        return `https://visitanalytics.userreport.com/hit.gif?r=${random}&t=${code}&d=${advertisingId}&med=${bundleId}${buildNumber}${idfv}`;
-};
-const handleErrors = (response) => {
-    if (!response.ok) {
-        throw Error(`Unable to fetch sak-config. status: ${response.status}; statusText: ${response.statusText}`);
+const error = (...args) => {
+  if (debug) {
+    console.error(...args);
+  }
+}
+
+const info = (...args) => {
+    if (debug) {
+      console.info(...args);
     }
-    return response;
+  }
+
+let advertisingId;
+
+RNAdvertisingId.getAdvertisingId()
+    .then(data => (
+        advertisingId = data.advertisingId
+    ))
+    .catch(() => {
+        warn('Unable to get advertizing ID');
+        advertisingId = '00000000-0000-0000-0000-000000000000';
+    });
+
+if (!advertisingId) {
+  warn('Unable to get advertizing ID');
+  advertisingId = '00000000-0000-0000-0000-000000000000';
+}
+
+const bundleId = getBundleId();
+if (!bundleId) {
+  warn('Unable to get device bundle ID');
+  bundleId = '';
+}
+
+const buildNumber = getBuildNumber();
+if (!buildNumber) {
+  warn('Unable to get device build number');
+  buildNumber = '';
+}
+
+const uniqueId = getUniqueId();
+if (!uniqueId) {
+  warn('Unable to get device unique ID');
+  uniqueId = '';
+}
+
+const os = Platform.OS;
+if (!os) {
+  warn('Unable to get plaform OS');
+  os = 'android';
+}
+
+const track = trackingCode => {
+  const random = Math.floor(Math.random() * 10 * 1000 * 1000 * 1000);
+  
+  const url = 'https://visitanalytics.userreport.com/hit.gif' +
+    `?t=${trackingCode}` +
+    `&r=${random}` +
+    `&d=${advertisingId}` +
+    `&med=${[bundleId, buildNumber].join('/')}` +
+    `&idfv=${uniqueId}`;
+
+  fetch(url)
+    .then(response => info(response))
+    .catch(() => error('Tracking request failed'));
+};
+
+const configure = (sakId, mediaId, settings) => {
+  debug = settings && !!settings.debug;
+
+  if (
+    !sakId || typeof sakId !== 'string' ||
+    !mediaId || typeof mediaId !== 'string' ||
+    settings && typeof settings !== 'object'
+  ) {
+    return error('Invalid configure params specified');
+  }
+
+  fetch(`https://sak.userreport.com/${sakId}/media/${mediaId}/${os}.json`)
+    .then(response => (
+      response.json()
+        .then(json => (
+          sakData = json
+        ))
+        .catch(() => error('Unable to parse SAK configuration'))
+    ))
+    .catch(() => error('Unable to load SAK configuration'));
+}
+
+const trackScreenView = () => {
+  if (!sakData) {
+    return error('UserReport SDK is not configured properly')
+  }
+
+  if (!sakData.kitTcode) {
+    return error('Media not configured properly');
+  }
+  return track(sakData.kitTcode);
+};
+
+const trackSectionScreenView = sectionId => {
+  if (!sakData) {
+    return error('UserReport SDK is not configured properly');
+  }
+  
+  if(!sakData.sections || !sakData.sections[sectionId]) {
+    return error('Section is missing in this media');
+  }
+
+  return track(sakData.sections[sectionId]);
 };
 
 export default {
-    configure: (sakId, mediaId, settings) => {
-        this.sakId = sakId;
-        this.mediaId = mediaId;
-        this.settings = settings;
-        this.logError = settings?.logToConsole ? console.error : function(){};
-        this.logInfo = settings?.logToConsole ? console.info : function(){};
-
-        const platform = checkData(Platform.OS, 'platform', logError);
-        const url = `https://sak.userreport.com/${sakId}/media/${mediaId}/${platform}.json`;
-        fetch(url)
-            .then(handleErrors)
-            .then(data=> {
-                 data.json()
-                    .then(json=> {
-                        this.sakData = json;
-                    })
-                    .catch(this.logError);
-            })
-            .catch(this.logError);
-    },
-
-    trackSectionScreenView: sectionId => {
-        try{
-            if (this.sakData) {
-                if(this.sakData.sections){
-                    const kitTcode = this.sakData.sections[sectionId];
-                    getAnanyticsUrl(kitTcode, logError)
-                        .then(url=> {
-                            fetch(url)
-                            .then(this.logInfo)
-                            .catch(this.logError);
-                        })
-                        .catch(this.logError);
-                }else{
-                    this.logError("There is no sections in this media")
-                }
-            }else{
-                this.logError("UserReport is not configured properly.")
-            }
-        } catch (e) {
-            this.logError(e);
-        }
-        
-    },
-
-    trackScreenView: () => {
-        try{
-            if (this.sakData) {
-                const {kitTcode} = sakData;
-                getAnanyticsUrl(kitTcode)
-                    .then(url=> {
-                        fetch(url)
-                        .then(res => this.logInfo(res))
-                        .catch(e => this.logError(e));
-                    })
-                    .catch(e=> this.logError(e));
-            }else {
-                this.logError("UserReport is not configured properly.")
-            }
-        } catch (e) {
-            this.logError(e);
-        }
-    },
-  };
+  configure,
+  trackScreenView,
+  trackSectionScreenView,
+};

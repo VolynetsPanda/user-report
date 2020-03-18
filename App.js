@@ -19,8 +19,8 @@ const Screen = createStackNavigator(
 )
 export default class App extends Component{
     componentDidMount() {
-        UserReport.configure("audienceproject","3402b774-b7a8-448c-997a-ef6cd59efc41");
-        //UserReport.configure("audienceproject","3402b774-b7a8-448c-997a-ef6cd59efc41",  { logToConsole: true});
+        //UserReport.configure("audienceproject","3402b774-b7a8-448c-997a-ef6cd59efc41");
+        UserReport.configure("audienceproject","3402b774-b7a8-448c-997a-ef6cd59efc41",  { debug: true});
     }
     render() {
         return <Screen/>
