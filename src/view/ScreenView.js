@@ -7,7 +7,7 @@ import {APPLICATION} from '../modules/route';
 
 export default class ScreenView extends Component {
     componentDidMount() {
-        UserReport.getInstance().trackScreenView();
+        UserReport.trackScreenView();
     }
 
     render() {

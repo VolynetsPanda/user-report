@@ -1,74 +1,98 @@
-import AsyncStorage from '@react-native-community/async-storage';
 import RNAdvertisingId from 'react-native-advertising-id';
 import DeviceInfo from 'react-native-device-info';
 import {Platform} from 'react-native';
 
-export default class UserReport {
-    static myInstance = null;
+const checkData= (data, name, logError) =>
+    (data === undefined || data === null)
+    ? logError(`${name} not received`)
+    : data;
 
-    static getInstance() {
-        if (UserReport.myInstance == null) {
-            UserReport.myInstance = new UserReport();
-        }
-        return this.myInstance;
-    }
-    configure = async (sakId, mediaId) => {
-        try {
-            const platform = this.checkData(Platform.OS, 'platform');
-            const url = `https://sak.userreport.com/${sakId}/media/${mediaId}/${platform}.json`;
-            const data = await fetch(url);
-            const dataJson = await data.json();
-            if (dataJson !== null) {
-                const string = JSON.stringify(dataJson);
-                await AsyncStorage.setItem('json_file', string);
-            } else {
-                console.warn('json_file');
+const getAnanyticsUrl = async (code, logError) => {
+        let advertisingId = '00000000-0000-0000-0000-000000000000';
+        try{
+            const rnaResponse = await RNAdvertisingId.getAdvertisingId();
+            if(rnaResponse && rnaResponse.advertisingId){
+                advertisingId = rnaResponse.advertisingId;
             }
-        } catch (e) {
-            console.warn(e);
-        }
-    };
 
-    gettingData = async (code) => {
-        const {advertisingId} = await RNAdvertisingId.getAdvertisingId();
+        }catch(e){
+            logError("Can not get advetising Id (AAID or IDFA)");
+        }
         const random = Math.floor(Math.random() * 1e10);
-        const bundleId = this.checkData(DeviceInfo.getBundleId(), 'BundleId');
-        const buildNumber = this.checkData(DeviceInfo.getBuildNumber(), 'BuildNumber');
+        const bundleId = checkData(DeviceInfo.getBundleId(), 'BundleId', logError);
+        const buildNumber = checkData(DeviceInfo.getBuildNumber(), 'BuildNumber', logError);
         const idfv = Platform.OS === 'ios' ? `&idfv=${DeviceInfo.getUniqueId()}` : '';
-        return `?r=${random}&t=${code}&d=${advertisingId}&med=${bundleId}${buildNumber}${idfv}`;
-    };
+        return `https://visitanalytics.userreport.com/hit.gif?r=${random}&t=${code}&d=${advertisingId}&med=${bundleId}${buildNumber}${idfv}`;
+};
+const handleErrors = (response) => {
+    if (!response.ok) {
+        throw Error(`Unable to fetch sak-config. status: ${response.status}; statusText: ${response.statusText}`);
+    }
+    return response;
+};
 
-    checkData = (data, name) =>
-        (data === undefined || data === null)
-            ? console.warn(`${name} not received`)
-            : data;
+export default {
+    configure: (sakId, mediaId, settings) => {
+        this.sakId = sakId;
+        this.mediaId = mediaId;
+        this.settings = settings;
+        this.logError = settings?.logToConsole ? console.error : function(){};
+        this.logInfo = settings?.logToConsole ? console.info : function(){};
 
-    trackScreenView = async () => {
-        try {
-            const data = await AsyncStorage.getItem('json_file');
-            if (data !== null) {
-                const {kitTcode} = JSON.parse(data);
-                const track = await this.gettingData(kitTcode);
-                fetch(`https://visitanalytics.userreport.com/hit.gif${track}`)
-                    .then(res => console.log(res)).catch(e => console.warn(e)).done();
+        const platform = checkData(Platform.OS, 'platform', logError);
+        const url = `https://sak.userreport.com/${sakId}/media/${mediaId}/${platform}.json`;
+        fetch(url)
+            .then(handleErrors)
+            .then(data=> {
+                 data.json()
+                    .then(json=> {
+                        this.sakData = json;
+                    })
+                    .catch(this.logError);
+            })
+            .catch(this.logError);
+    },
+
+    trackSectionScreenView: sectionId => {
+        try{
+            if (this.sakData) {
+                if(this.sakData.sections){
+                    const kitTcode = this.sakData.sections[sectionId];
+                    getAnanyticsUrl(kitTcode, logError)
+                        .then(url=> {
+                            fetch(url)
+                            .then(this.logInfo)
+                            .catch(this.logError);
+                        })
+                        .catch(this.logError);
+                }else{
+                    this.logError("There is no sections in this media")
+                }
+            }else{
+                this.logError("UserReport is not configured properly.")
             }
         } catch (e) {
-            console.warn(e);
+            this.logError(e);
         }
-    };
+        
+    },
 
-    trackSectionScreenView = async (sectionId) => {
-        try {
-            const data = await AsyncStorage.getItem('json_file');
-            if (data !== null) {
-                const sections = await JSON.parse(data);
-                const tCode = sections[sectionId];
-                const track = await this.gettingData(tCode);
-                fetch(`https://visitanalytics.userreport.com/hit.gif${track}`)
-                    .then(res => console.log(res)).catch(e => console.warn(e)).done();
+    trackScreenView: () => {
+        try{
+            if (this.sakData) {
+                const {kitTcode} = sakData;
+                getAnanyticsUrl(kitTcode)
+                    .then(url=> {
+                        fetch(url)
+                        .then(res => this.logInfo(res))
+                        .catch(e => this.logError(e));
+                    })
+                    .catch(e=> this.logError(e));
+            }else {
+                this.logError("UserReport is not configured properly.")
             }
         } catch (e) {
-            console.warn(e);
+            this.logError(e);
         }
-    };
-}
+    },
+  };
