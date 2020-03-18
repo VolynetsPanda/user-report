@@ -3,7 +3,7 @@
 ## Setup dependencies
 
 ```bash
-npm install --save @apr/userreport
+npm install --save @apr/react-native-userreport-sdk
 ```
 
 <!-- * `react-native-device-info` is used to get device information:
@@ -63,17 +63,27 @@ Configure the UserReport ReactNative SDK using your `PUBLISHER_ID` and your `MED
 
 Your `PUBLISHER_ID` and `MEDIA_ID` can be found on the Media Setting page in UserReport.
 
-```javascript
-//App.js
-import UserReport from '??????????/UserReport'
-export default class App extends Component{
-    componentDidMount() {
-        UserReport.configure("audienceproject","3402b774-b7a8-448c-997a-ef6cd59efc41");
-    }
-}
 
+```javascript
 // Configure
 UserReport.configure("PUBLISHER_ID","MEDIA_ID");
+```
+
+Example: 
+
+```javascript
+//App.js
+import {Platform} from 'react-native';
+import UserReport from '@apr/react-native-userreport-sdk'
+
+export default class App extends Component{
+    componentDidMount() {
+        var mediaId = Platform.OS === 'ios' ?
+         "MEDIA_ID_FOR_IOS": "MEDIA_ID_FOR_ANDROID";
+      
+        UserReport.configure("PUBLISHER_ID",mediaId);
+    }
+}
 ```
 
 There are two types of tracking:
@@ -86,13 +96,12 @@ If a website has different sections, for instance *Health*, *World news* and *Lo
 Even when `UserReport.trackSectionScreenView(sectionId)` is used `UserReport.trackScreenView()` should be invoked as well.
 
 Example of manual tracking:
-```swift
-class ViewController: UIViewController {
-    override open func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-
-        // Tracking screen view
-        UserReport.trackScreenView()
+```javascript
+export default class ScreenView extends Component {
+    componentDidMount() {
+        UserReport.trackScreenView();
     }
+
+    render() {...}
 }
 ```
